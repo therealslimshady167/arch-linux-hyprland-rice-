@@ -1,0 +1,42 @@
+# Git
+.git/
+
+# Editor / OS junk
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Build/cache directories
+build/
+dist/
+target/
+node_modules/
+
+# Logs
+*.log
+
+# Local backups
+arch-rice-backup-*/
+*.backup
+*.bak
+*.old
+
+# Secrets / credentials
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Generated boot configuration
+grub.cfg

@@ -1,0 +1,98 @@
+/* ── Rofi Theme ──────────────────────────────
+   °˖* ૮(  • ᴗ ｡)っ🍸  pewdiepie/archdaemon/dionysh
+   shhheersh
+   Vers 1.0
+   Description: Custom styling for Rofi launcher 
+   ─────────────────────────────────────────── */
+
+/* Global defaults */
+* {
+  font: "JetBrainsMono Nerd Font 11";
+  blur: true;
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 0px;  // remove default rounding globally
+}
+
+/* ── Window ──────────────────────────────── */
+window {
+    border-color:     rgba ( 57, 255, 20, 100 % );
+    padding:          0px;
+    width:            750px;
+    location:         center;
+    background-color: transparent;
+    margin:           30px 50px;
+    border-radius:    6px;
+    border:           4px;
+}
+
+/* ── Layout ──────────────────────────────── */
+mainbox {
+  orientation: horizontal;
+  children: [ "borderbox" ];
+  spacing: 0px;
+  padding: 0px;
+}
+
+borderbox {
+  orientation: horizontal;
+  children: [ "contentbox" ];
+  padding: 0px;
+  spacing: 0px;
+  border-radius: 3px;
+}
+
+contentbox {
+  orientation: vertical;
+  children: [ "entry", "listview" ];
+  spacing: 0px;
+  padding: 0px;
+  expand: true;
+}
+
+
+/* ── Elements ────────────────────────────── */
+element {
+  border-radius: 0px;
+}
+
+element-text, element-icon {
+  padding: 6px 8px;
+  spacing: 2px;
+  text-color: #00e5ff;
+}
+
+element selected {
+  background-color: #191919;
+  text-color: #00e5ff;
+  border-radius: 3px;
+}
+
+/* ── Input & Prompt ──────────────────────── */
+prompt {
+  enabled: false;
+  background-color: transparent;
+  text-color: #61afef;
+  padding: 5px 10px;
+}
+entry {
+  padding: 15px;
+  expand: false;
+  font: "JetBrainsMono Nerd Font 14";
+  text-color: #00e5ff;
+  placeholder: "Domain Expansion : Rofi";
+  placeholder-color: #00e5ff;
+  background-color: #292e36;
+  border-radius: 0px;
+  text-align: center;
+}
+
+
+/* ── Listview ────────────────────────────── */
+listview {
+  lines: 10;
+  background-color: rgba(56, 52, 64, 0.8); 
+  border-radius: 0px 0px 3px 0px;
+  padding: 5px;
+}
+

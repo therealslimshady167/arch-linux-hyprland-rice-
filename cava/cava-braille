@@ -1,0 +1,400 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import time
+import math
+import shutil
+import select
+
+CAVA_PATH = "/tmp/cava.raw"
+
+# ============================================================
+# ANIMATION
+# ============================================================
+
+ATTACK = 0.28
+RELEASE = 0.16
+
+SPATIAL_SMOOTHING = 0.55
+
+FRAME_TIME = 0.016
+
+# ============================================================
+# BRAILLE
+# ============================================================
+
+DOTS = [
+    0x01,
+    0x02,
+    0x04,
+    0x40,
+]
+
+GREEN = "\033[38;2;57;255;20m"
+RESET = "\033[0m"
+HIDE_CURSOR = "\033[?25l"
+SHOW_CURSOR = "\033[?25h"
+HOME = "\033[H"
+CLEAR = "\033[2J"
+
+
+def terminal_size():
+    size = shutil.get_terminal_size(fallback=(80, 24))
+
+    width = max(1, size.columns)
+    height = max(1, size.lines)
+
+    return width, height
+
+
+def parse_cava(line):
+    values = []
+
+    for item in line.strip().split(";"):
+        if not item:
+            continue
+
+        try:
+            values.append(float(item))
+        except ValueError:
+            pass
+
+    return values
+
+
+def normalize(values):
+    return [
+        max(0.0, min(1000.0, value))
+        for value in values
+    ]
+
+
+# ============================================================
+# RESAMPLE CAVA TO TERMINAL WIDTH
+# ============================================================
+
+def resize_values(values, width):
+    if not values:
+        return [0.0] * width
+
+    if len(values) == width:
+        return values[:]
+
+    result = []
+    source_length = len(values)
+
+    for x in range(width):
+        position = (
+            x * (source_length - 1)
+            / max(1, width - 1)
+        )
+
+        left = int(position)
+        right = min(
+            left + 1,
+            source_length - 1
+        )
+
+        fraction = position - left
+
+        value = (
+            values[left] * (1.0 - fraction)
+            + values[right] * fraction
+        )
+
+        result.append(value)
+
+    return result
+
+
+# ============================================================
+# HORIZONTAL SHAPE SMOOTHING
+# ============================================================
+
+def smooth_shape(values):
+    if len(values) < 5:
+        return values[:]
+
+    result = [0.0] * len(values)
+
+    for i in range(len(values)):
+        left2 = values[max(0, i - 2)]
+        left1 = values[max(0, i - 1)]
+        center = values[i]
+        right1 = values[min(len(values) - 1, i + 1)]
+        right2 = values[min(len(values) - 1, i + 2)]
+
+        neighbour_average = (
+            left2 * 0.10
+            + left1 * 0.20
+            + center * 0.40
+            + right1 * 0.20
+            + right2 * 0.10
+        )
+
+        result[i] = (
+            center * (1.0 - SPATIAL_SMOOTHING)
+            + neighbour_average * SPATIAL_SMOOTHING
+        )
+
+    return result
+
+
+# ============================================================
+# BRAILLE
+# ============================================================
+
+def make_braille_cell(fraction):
+    fraction = max(
+        0.0,
+        min(1.0, fraction)
+    )
+
+    dots = int(round(fraction * 4))
+
+    mask = 0
+
+    for i in range(dots):
+        mask |= DOTS[3 - i]
+
+    return chr(0x2800 + mask)
+
+
+# ============================================================
+# RENDER
+# ============================================================
+
+def render(values, width, height):
+    values = resize_values(
+        values,
+        width
+    )
+
+    values = smooth_shape(values)
+
+    total_pixels = height * 4
+
+    heights = []
+
+    for value in values:
+        normalized = value / 1000.0
+        normalized = normalized ** 0.85
+
+        heights.append(
+            normalized * total_pixels
+        )
+
+    output = []
+
+    for row in range(height):
+        cell_bottom = (
+            (height - 1 - row) * 4
+        )
+
+        line = []
+
+        for bar_height in heights:
+            dots_in_cell = (
+                bar_height
+                - cell_bottom
+            )
+
+            if dots_in_cell <= 0:
+                fraction = 0.0
+
+            elif dots_in_cell >= 4:
+                fraction = 1.0
+
+            else:
+                fraction = (
+                    dots_in_cell / 4.0
+                )
+
+            line.append(
+                make_braille_cell(
+                    fraction
+                )
+            )
+
+        output.append(
+            "".join(line)
+        )
+
+    return "\n".join(output)
+
+
+# ============================================================
+# READ NEWEST CAVA FRAME
+# ============================================================
+
+def read_latest_frame(cava):
+    line = cava.readline()
+
+    if not line:
+        return None
+
+    while True:
+        ready, _, _ = select.select(
+            [cava],
+            [],
+            [],
+            0
+        )
+
+        if not ready:
+            break
+
+        newer_line = cava.readline()
+
+        if not newer_line:
+            break
+
+        line = newer_line
+
+    return line
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+def main():
+    if not os.path.exists(CAVA_PATH):
+        print(
+            f"CAVA FIFO not found: {CAVA_PATH}"
+        )
+
+        print("Start CAVA first.")
+
+        sys.exit(1)
+
+    display_values = []
+
+    last_time = time.monotonic()
+
+    try:
+        with open(
+            CAVA_PATH,
+            "r",
+            buffering=1
+        ) as cava:
+
+            sys.stdout.write(HIDE_CURSOR)
+            sys.stdout.write(CLEAR)
+            sys.stdout.write(GREEN)
+            sys.stdout.flush()
+
+            while True:
+
+                line = read_latest_frame(cava)
+
+                if line is None:
+                    time.sleep(0.002)
+                    continue
+
+                values = parse_cava(line)
+
+                if not values:
+                    continue
+
+                values = normalize(values)
+
+                width, height = terminal_size()
+
+                target = resize_values(
+                    values,
+                    width
+                )
+
+                target = smooth_shape(target)
+
+                # ====================================================
+                # TIME-BASED ANIMATION
+                # ====================================================
+
+                now = time.monotonic()
+
+                dt = now - last_time
+                last_time = now
+
+                dt = max(
+                    0.001,
+                    min(dt, 0.1)
+                )
+
+                attack_alpha = (
+                    1.0
+                    - math.exp(
+                        -ATTACK
+                        * dt
+                        * 60.0
+                    )
+                )
+
+                release_alpha = (
+                    1.0
+                    - math.exp(
+                        -RELEASE
+                        * dt
+                        * 60.0
+                    )
+                )
+
+                if (
+                    not display_values
+                    or len(display_values) != width
+                ):
+                    display_values = target[:]
+
+                else:
+
+                    for i in range(width):
+
+                        current = display_values[i]
+
+                        target_value = target[i]
+
+                        difference = (
+                            target_value
+                            - current
+                        )
+
+                        if difference > 0:
+                            alpha = attack_alpha
+                        else:
+                            alpha = release_alpha
+
+                        display_values[i] = (
+                            current
+                            + difference * alpha
+                        )
+
+                # ====================================================
+                # DRAW
+                # ====================================================
+
+                visualizer = render(
+                    display_values,
+                    width,
+                    height
+                )
+
+                sys.stdout.write(HOME)
+                sys.stdout.write(visualizer)
+                sys.stdout.flush()
+
+                time.sleep(FRAME_TIME)
+
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        sys.stdout.write(RESET)
+        sys.stdout.write(SHOW_CURSOR)
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()
