@@ -37,7 +37,6 @@ GDM, Plymouth, Eww, and other unused components are intentionally excluded.
 
 <div align="center">
 
-<img src="screenshots/desktop.png" width="48%">
 <img src="screenshots/2026-09-13_13-28-58.png" width="48%">
 <img src="screenshots/2026-09-13_13-29-15.png" width="48%">
 <img src="screenshots/2026-09-13_13-29-22.png" width="48%">
