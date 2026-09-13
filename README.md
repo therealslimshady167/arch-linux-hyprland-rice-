@@ -30,3 +30,22 @@ This setup is designed for my Arch Linux system and may require adjustments for 
 GRUB configuration files are not included; only the custom theme assets are provided.
 
 GDM, Plymouth, Eww, and other unused components are intentionally excluded.
+
+
+
+## Screenshots
+
+<div align="center">
+
+<img src="screenshots/desktop.png" width="48%">
+<img src="screenshots/2026-09-13_13-28-58.png" width="48%">
+<img src="screenshots/2026-09-13_13-29-15.png" width="48%">
+<img src="screenshots/2026-09-13_13-29-22.png" width="48%">
+<img src="screenshots/2026-09-13_13-29-41.png" width="48%">
+<img src="screenshots/2026-09-13_13-29-51.png" width="48%">
+<img src="screenshots/2026-09-13_13-29-56.png" width="48%">
+<img src="screenshots/2026-09-13_13-30-43.png" width="48%">
+<img src="screenshots/2026-09-13_13-31-19.png" width="48%">
+<img src="screenshots/2026-09-13_13-31-37.png" width="48%">
+
+</div>
